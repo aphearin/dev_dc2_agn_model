@@ -7,18 +7,12 @@ the dimming of quasars below the brightness of the existing cosmoDC2 implementat
 import numpy as np
 
 
-def calculate_quasar_probability(stellar_mass, redshift, gr_restframe, ri_restframe,
-            hiz_main_sequence_prob_boost=0.1, **kwargs):
+def calculate_quasar_probability(stellar_mass, redshift, gr_restframe, ri_restframe, **kwargs):
     """ Model for the probability that an object hosts a quasar based
     on the distance from the green valley. Galaxies with colors that are
     redder than the green valley have a very low probability of hosting a quasar.
     Galaxies with bluer colors have a quasar probability that is tunable by
     the input model parameters.
-
-    An explicit redshift-dependence of the model can be tuned by the input
-    `hiz_main_sequence_prob_boost` parameter; note that even when hiz_prob_boost = 0,
-    quasars will still be more abundant at higher redshift because
-    the blue fraction of galaxies is larger at higher redshift.
 
     Parameters
     ----------
@@ -30,10 +24,6 @@ def calculate_quasar_probability(stellar_mass, redshift, gr_restframe, ri_restfr
 
     ri_restframe : float or ndarray of shape (ngals, )
 
-    hiz_main_sequence_prob_boost : float, optional
-        Increased probability at high-redshift for a main sequence galaxy
-        will host a quasar relative to a z=0 galaxy with the same mass and colors.
-
     Returns
     -------
     quasar_prob : ndarray of shape (ngals, )
@@ -42,8 +32,7 @@ def calculate_quasar_probability(stellar_mass, redshift, gr_restframe, ri_restfr
                 stellar_mass, redshift, gr_restframe, ri_restframe)
     eigencolor = calculate_eigencolor(gr_restframe, ri_restframe)
     gv_distance = _calculate_gv_distance(stellar_mass, eigencolor, **kwargs)
-    quasar_prob = _quasar_prob_vs_gv_distance(gv_distance, redshift,
-            hiz_main_sequence_prob_boost=hiz_main_sequence_prob_boost, **kwargs)
+    quasar_prob = _quasar_prob_vs_gv_distance(gv_distance, redshift, **kwargs)
 
     quasar_prob = np.where(quasar_prob < 0, 0, quasar_prob)
     quasar_prob = np.where(quasar_prob > 1, 1, quasar_prob)
@@ -116,18 +105,18 @@ def eigencolor_green_valley(stellar_mass, logsm0=10., y0=0.8, color_vs_logsm_slo
     return (np.log10(stellar_mass) - logsm0)*color_vs_logsm_slope + y0
 
 
-def _quasar_prob_vs_gv_distance(gv_distance, redshift, hiz_main_sequence_prob_boost=0.1,
-            main_sequence_logprob_z0=-0.6, quenched_logprob=-3, **kwargs):
+def _quasar_prob_vs_gv_distance(gv_distance, redshift, main_sequence_logprob_hiz=-1.5,
+            main_sequence_logprob_z0=-3, quenched_logprob=-4, **kwargs):
     """Calculate the probability that a galaxy hosts a quasar as a function of DV,
     the distance from the Green Valley. Galaxies with positive GV have a red
     eigencolor and are very unlikely to host a quasar; galaxies with negative GV
     have a blue eigencolor and host a quasar with probability tunable by the
-    `main_sequence_logprob` and `hiz_main_sequence_prob_boost` model parameters.
+    `main_sequence_logprob_z0` and `main_sequence_logprob_hiz` model parameters.
 
     """
-    prob_hiz_boost = _sigmoid(redshift, x0=0.5, k=4, ylo=0, yhi=hiz_main_sequence_prob_boost)
-    main_sequence_prob_z0 = 10.**main_sequence_logprob_z0
-    main_sequence_prob = main_sequence_prob_z0 + prob_hiz_boost
+    main_sequence_logprob = _sigmoid(redshift, x0=0.5, k=4,
+                ylo=main_sequence_logprob_z0, yhi=main_sequence_logprob_hiz)
+    main_sequence_prob = 10.**main_sequence_logprob
     main_sequence_logprob = np.log10(main_sequence_prob)
     return 10**_sigmoid(
                 gv_distance, x0=0, k=5, ylo=main_sequence_logprob, yhi=quenched_logprob)
