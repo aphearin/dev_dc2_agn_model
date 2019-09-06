@@ -105,8 +105,9 @@ def eigencolor_green_valley(stellar_mass, logsm0=10., y0=0.8, color_vs_logsm_slo
     return (np.log10(stellar_mass) - logsm0)*color_vs_logsm_slope + y0
 
 
-def _quasar_prob_vs_gv_distance(gv_distance, redshift, main_sequence_logprob_hiz=-1.5,
-            main_sequence_logprob_z0=-3, quenched_logprob=-4, **kwargs):
+def _quasar_prob_vs_gv_distance(gv_distance, redshift, main_sequence_logprob_z0=-1,
+                                        main_sequence_logprob_hiz=-0.5,
+                                        quenched_logprob=-4, **kwargs):
     """Calculate the probability that a galaxy hosts a quasar as a function of DV,
     the distance from the Green Valley. Galaxies with positive GV have a red
     eigencolor and are very unlikely to host a quasar; galaxies with negative GV
